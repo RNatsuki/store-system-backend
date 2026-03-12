@@ -12,11 +12,13 @@ export class Employee extends User {
     private profileImage?: string;
 
     constructor(
-        id: string | undefined,
+        id: string,
         email: string,
         password: string | undefined,
         token: string | undefined,
         tokenExpiration: Date | undefined,
+        role: string,
+        isActive: boolean,
         name: string,
         lastName: string,
         birthDate: Date,
@@ -33,6 +35,8 @@ export class Employee extends User {
             password!,
             token!,
             tokenExpiration!,
+            role,
+            isActive,
             isVerified
         );
         this.name = name;
@@ -45,7 +49,7 @@ export class Employee extends User {
         this.profileImage = profileImage;
     }
 
-    public getId(): string | undefined {
+    public getId(): string {
         return super.getId();
     }
 
@@ -85,5 +89,6 @@ export class Employee extends User {
     public getProfileImage(): string | undefined {
         return this.profileImage;
     }
+
 
 }

@@ -1,17 +1,21 @@
 export class User {
-    private id?: string;
+    private id: string;
     private email: string;
     private password: string;
     private token: string;
     private tokenExpiration: Date;
+    private role: string;
+    private isActive: boolean;
     private isVerified: boolean;
 
     constructor(
-        id: string | undefined,
+        id: string,
         email: string,
         password: string,
         token: string,
         tokenExpiration: Date,
+        role: string,
+        isActive: boolean,
         isVerified: boolean
     ) {
         this.id = id;
@@ -19,10 +23,13 @@ export class User {
         this.password = password;
         this.token = token;
         this.tokenExpiration = tokenExpiration;
+        this.isActive = isActive;
+        this.role = role;
+
         this.isVerified = isVerified;
     }
 
-    public getId(): string | undefined {
+    public getId(): string {
         return this.id;
     }
 
@@ -44,6 +51,14 @@ export class User {
 
     public getIsVerified(): boolean {
         return this.isVerified;
+    }
+
+    public getRole(): string {
+        return this.role;
+    }
+
+    public getIsActive(): boolean {
+        return this.isActive;
     }
 
 }

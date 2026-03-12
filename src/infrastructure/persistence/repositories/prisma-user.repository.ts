@@ -44,6 +44,8 @@ export class PrismaUserRepository implements UserRepository {
             data.password,
             data.token,
             data.tokenExpires,
+            data.role,
+            data.isActive,
             data.isVerified
         );
     }

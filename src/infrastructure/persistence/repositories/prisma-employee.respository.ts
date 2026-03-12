@@ -14,7 +14,7 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
     findById(id: string): Promise<Employee | null> {
         throw new Error("Method not implemented.");
     }
-    
+
     async save(employee: Employee): Promise<void> {
         await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.create({
@@ -54,6 +54,9 @@ export class PrismaEmployeeRepository implements EmployeeRepository {
             data.password,
             data.token,
             data.tokenExpires,
+            data.role,
+            data.isActive,
+            data.isVerified,
             data.name,
             data.lastname,
             data.birthdate,

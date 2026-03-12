@@ -128,27 +128,27 @@ export class AuthService implements IAuthService {
     ): Promise<Result<IAuthResponse, Error>> {
         const { email, password } = data;
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await this.userRepository.findByEmail(email);
 
         if (!user)
             return Result.fail<IAuthResponse, Error>(
                 new NotFoundError("user not found")
             );
-        if (!user.isActive)
+        if (!user.getIsActive())
             return Result.fail<IAuthResponse, Error>(
                 new UnauthorizedError("Usuario dado de baja")
             );
 
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.getPassword());
         if (!isPasswordValid)
             return Result.fail<IAuthResponse, Error>(
                 new UnauthorizedError("Credenciales inválidas")
             );
 
         return Result.ok<IAuthResponse, Error>({
-            id: user.id,
-            role: user.role,
-            email: user.email,
+            id: user.getId(),
+            role: user.getRole(),
+            email: user.getEmail(),
         });
     }
     /**
