@@ -2,7 +2,6 @@ import { prisma } from "../../config/prisma";
 
 import {
     IAuthService,
-    IUser,
     ILoginPost,
     IEmployeeInfo,
     IAuthResponse,
@@ -13,6 +12,11 @@ import {
 } from "../../middlewares/errors/error";
 import { Result } from "../../shared/core/Result";
 import bcrypt from "bcryptjs";
+import { EmployeeRepository } from "../../domain/repositories/employee.repository";
+import { GetEmployeeUseCase } from "../../domain/use-cases/employee/get-employee.use-case";
+import { CreateEmployeeUseCase } from "../../domain/use-cases/employee/create-employee.use-case";
+import { UserRepository } from "../../domain/repositories/user-repository";
+import { VerifyEmailUseCase } from "../../domain/use-cases/user/verifyEmail-use-case";
 
 /**
  * Service responsible for handling authentication and user management logic.
@@ -64,7 +68,24 @@ import bcrypt from "bcryptjs";
  * ```
  */
 export class AuthService implements IAuthService {
-    constructor() {}
+    private employeeRepository: EmployeeRepository;
+    private getEmployeeUseCase: GetEmployeeUseCase;
+    private createEmployeeUseCase: CreateEmployeeUseCase;
+
+    private userRepository: UserRepository;
+    private verifyEmailUseCase: VerifyEmailUseCase;
+
+    constructor(employeeRepository: EmployeeRepository, userRepository: UserRepository) {
+        this.employeeRepository = employeeRepository;
+        this.getEmployeeUseCase = new GetEmployeeUseCase(employeeRepository);
+        this.createEmployeeUseCase = new CreateEmployeeUseCase(
+            employeeRepository
+        );
+
+
+        this.userRepository = userRepository;
+        this.verifyEmailUseCase = new VerifyEmailUseCase(this.userRepository);
+    }
 
     /**
      * Validates user credentials by looking up the email in the database
@@ -181,28 +202,20 @@ export class AuthService implements IAuthService {
         payload: IEmployeeInfo
     ): Promise<Result<void, Error>> {
         try {
-            await prisma.$transaction(async (tx: any) => {
-                const user = await tx.user.create({
-                    data: {
-                        email: payload.email,
-                        password: payload.password,
-                        token: payload.token,
-                        tokenExpires: payload.tokenExpires,
-                    },
-                });
-                await tx.employee.create({
-                    data: {
-                        name: payload.name,
-                        lastname: payload.lastname,
-                        birthdate: new Date(payload.birthdate),
-                        nss: payload.nss,
-                        rfc: payload.rfc,
-                        address: payload.address,
-                        salary: payload.salary,
-                        profileImage: payload.profileImage,
-                        userId: user.id,
-                    },
-                });
+
+            await this.createEmployeeUseCase.execute({
+                email: payload.email,
+                password: payload.password,
+                token: payload.token,
+                tokenExpires: payload.tokenExpires,
+                name: payload.name,
+                lastName: payload.lastname,
+                birthDate: new Date(payload.birthdate),
+                nss: payload.nss,
+                rfc: payload.rfc,
+                address: payload.address,
+                salary: payload.salary,
+                profileImage: payload.profileImage,
             });
 
             return Result.ok<void, Error>(undefined);
@@ -216,24 +229,11 @@ export class AuthService implements IAuthService {
         email: string
     ): Promise<Result<void, Error>> {
         try {
-            await prisma.$transaction(async (tx: any) => {
-                const user = await tx.user.findUnique({
-                    where: { token, email },
-                });
+           const user = await this.verifyEmailUseCase.execute(email, token);
 
-                if (!user) {
-                    throw new NotFoundError("Token no válido");
-                }
-
-                await tx.user.update({
-                    where: { id: user.id },
-                    data: {
-                        isVerified: true,
-                        token: null,
-                        tokenExpires: null,
-                    },
-                });
-            });
+            if (!user) {
+                return Result.fail(new NotFoundError("Usuario no encontrado o token inválido"));
+            }
 
             return Result.ok<void, Error>(undefined);
         } catch (error) {
@@ -245,13 +245,13 @@ export class AuthService implements IAuthService {
         email: string
     ): Promise<Result<{ token: string; tempPassword: string }, Error>> {
         try {
-            const user = await prisma.user.findUnique({ where: { email } });
+            const user = await this.userRepository.findByEmail(email);
 
             if (!user) {
                 return Result.fail(new NotFoundError("Usuario no encontrado"));
             }
 
-            if (user.isVerified) {
+            if (user.getIsVerified()) {
                 return Result.fail(new Error("El usuario ya está verificado"));
             }
 
@@ -261,14 +261,14 @@ export class AuthService implements IAuthService {
             const tempPassword = generateTempPassword(12);
 
             const token = await JWT.generateJWT({
-                email: user.email,
+                email: user.getEmail(),
             });
             if (!token) {
                 return Result.fail(new Error("Error al generar el token"));
             }
             const hashedPassword = await bcrypt.hash(tempPassword, 10);
             await prisma.user.update({
-                where: { id: user.id },
+                where: { id: user.getId() },
                 data: {
                     token,
                     tokenExpires: new Date(Date.now() + 2 * 60 * 60 * 1000),

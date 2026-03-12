@@ -8,10 +8,12 @@ import { ensureAdminMiddleware } from "../middlewares/ensureAdminMiddleware";
 import { authenticate } from "../middlewares/authMiddleware";
 import { uploadMiddleware } from "../middlewares/uploadMiddleware";
 import { loginLimiter, verifyEmailLimiter } from "../middlewares/rateLimiter";
+import { PrismaEmployeeRepository } from "../infrastructure/persistence/repositories/prisma-employee.respository";
+import { PrismaUserRepository } from "../infrastructure/persistence/repositories/prisma-user.repository";
 
 const router = Router();
 // Ralizamos inyeccion de dependencias del service al controlador para un mejor orden y control.
-const authService = new AuthService();
+const authService = new AuthService(new PrismaEmployeeRepository(), new PrismaUserRepository());
 const authController = new AuthController(authService);
 
 const createNewEmployee = authController.registerPost;

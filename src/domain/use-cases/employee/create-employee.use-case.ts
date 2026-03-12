@@ -1,0 +1,56 @@
+import { Employee } from "../../entities/employee";
+import { EmployeeRepository } from "../../repositories/employee.repository";
+
+export class CreateEmployeeUseCase {
+    private employeeRepository: EmployeeRepository;
+
+    constructor(employeeRepository: EmployeeRepository) {
+        this.employeeRepository = employeeRepository;
+    }
+
+    public async execute({
+        email,
+        password,
+        name,
+        lastName,
+        birthDate,
+        nss,
+        rfc,
+        address,
+        salary,
+        profileImage,
+        token,
+        tokenExpires,
+    }: {
+        email: string;
+        password: string;
+        name: string;
+        lastName: string;
+        birthDate: Date;
+        nss: string;
+        rfc: string;
+        address: string;
+        salary: number;
+        profileImage?: string;
+        token: string;
+        tokenExpires: Date;
+    }) {
+        const employee = new Employee(
+            undefined,
+            email,
+            password,
+            token,
+            tokenExpires,
+            name,
+            lastName,
+            birthDate,
+            nss,
+            rfc,
+            address,
+            salary,
+            profileImage
+        );
+
+       return await this.employeeRepository.save(employee);
+    }
+}
